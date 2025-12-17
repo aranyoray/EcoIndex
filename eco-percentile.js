@@ -86,21 +86,23 @@ class EcoPercentileCalculator {
      */
     async processTractsAsync(tracts) {
         // Calculate scores for all tracts (with async EE calls)
-        const processedTracts = await Promise.all(tracts.map(async tract => {
-            // Get water quality and greenspace (can use EE if available)
-            const waterQuality = await this.estimateWaterQuality(tract.properties.lat, tract.properties.lon);
-            const greenspace = await this.estimateGreenspace(tract.properties.lat, tract.properties.lon);
-            
-            const ecoScore = this.calculateEcoScore(waterQuality, greenspace);
-            
-            tract.properties.waterQuality = waterQuality;
-            tract.properties.greenspace = greenspace;
-            tract.properties.ecoScore = ecoScore;
-            tract.properties.waterColor = this.getWaterColor(waterQuality);
-            tract.properties.greenspaceColor = this.getGreenspaceColor(greenspace);
-            
-            return ecoScore;
-        }));
+        const processedTracts = await Promise.all(
+            tracts.map(async (tract) => {
+                // Get water quality and greenspace (can use EE if available)
+                const waterQuality = await this.estimateWaterQuality(tract.properties.lat, tract.properties.lon);
+                const greenspace = await this.estimateGreenspace(tract.properties.lat, tract.properties.lon);
+                
+                const ecoScore = this.calculateEcoScore(waterQuality, greenspace);
+                
+                tract.properties.waterQuality = waterQuality;
+                tract.properties.greenspace = greenspace;
+                tract.properties.ecoScore = ecoScore;
+                tract.properties.waterColor = this.getWaterColor(waterQuality);
+                tract.properties.greenspaceColor = this.getGreenspaceColor(greenspace);
+                
+                return ecoScore;
+            })
+        );
 
         // Store all scores for percentile calculation
         this.allScores = processedTracts;
