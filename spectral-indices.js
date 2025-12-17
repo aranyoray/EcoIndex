@@ -277,26 +277,34 @@ const spectralIndicesCalculator = new SpectralIndicesCalculator();
 /**
  * OPEN SOURCE DATA SOURCES FOR SPECTRAL INDICES:
  * 
- * 1. Sentinel-2 AWS Public Dataset (BEST - Completely Free)
+ * 1. NASA Earthdata CMR API + AWS S3 (BEST - Completely Free) ⭐
+ *    - CMR API: https://cmr.earthdata.nasa.gov/
+ *    - AWS S3: s3://sentinel-s2-l2a/tiles/{TILE}/{DATE}/
+ *    - No API key needed for public bucket
+ *    - All bands available (B2-B12)
+ *    - https://www.earthdata.nasa.gov/data/instruments/sentinel-2-msi/data-access-tools
+ *    - Requires backend proxy for browser access (CORS)
+ * 
+ * 2. Sentinel-2 AWS Public Dataset (Completely Free)
  *    - s3://sentinel-s2-l2a/tiles/{TILE}/{DATE}/
  *    - No API key needed
  *    - All bands available (B2-B12)
  *    - https://registry.opendata.aws/sentinel-2/
  * 
- * 2. Sentinel Hub OGC API (Free Tier)
+ * 3. Sentinel Hub OGC API (Free Tier)
  *    - 5000 requests/month free
  *    - Easy API access
  *    - https://www.sentinel-hub.com/
  * 
- * 3. NASA Worldview
+ * 4. NASA Worldview
  *    - Quick visualization
  *    - https://worldview.earthdata.nasa.gov/
  * 
- * 4. USGS EarthExplorer (Landsat)
+ * 5. USGS EarthExplorer (Landsat)
  *    - Free with account
  *    - https://earthexplorer.usgs.gov/
  * 
- * 5. Google Earth Engine (Free for Research)
+ * 6. Google Earth Engine (Free for Research)
  *    - Already integrated
  *    - Can calculate indices server-side
  */
