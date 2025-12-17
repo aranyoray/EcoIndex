@@ -97,28 +97,21 @@ class SpectralIndicesCalculator {
     }
 
     /**
-     * Fetch Sentinel-2 bands from open source
+     * Fetch Sentinel-2 bands from NASA Earthdata
+     * Tries NASA CMR API first, then falls back to simulation
      */
     async fetchSentinel2Bands(lat, lon, date) {
-        // For production, use one of these:
+        // Try NASA Earthdata CMR API first
+        try {
+            const bands = await this.fetchFromNASAEarthdata(lat, lon, date);
+            if (bands && bands.source === 'nasa-earthdata-aws') {
+                return bands;
+            }
+        } catch (error) {
+            console.warn('NASA Earthdata fetch failed, using simulation:', error);
+        }
         
-        // 1. Sentinel Hub OGC WMS API (free tier)
-        /*
-        const instanceId = 'YOUR_INSTANCE_ID'; // Get from sentinel-hub.com
-        const url = `https://services.sentinel-hub.com/ogc/wms/${instanceId}?` +
-            `SERVICE=WMS&REQUEST=GetMap&LAYERS=TRUE_COLOR&` +
-            `BBOX=${lon-0.01},${lat-0.01},${lon+0.01},${lat+0.01}&` +
-            `WIDTH=512&HEIGHT=512&FORMAT=image/png&TIME=${date || '2024-01-01/2024-12-31'}`;
-        */
-        
-        // 2. AWS Sentinel-2 Public Dataset (completely free, no API key)
-        // Access via: s3://sentinel-s2-l2a/tiles/{TILE}/{DATE}/
-        // Or use AWS CLI/boto3
-        
-        // 3. NASA Worldview (for quick visualization)
-        // https://worldview.earthdata.nasa.gov/
-        
-        // For now, simulate realistic band values based on location
+        // Fallback to realistic simulation
         return this.simulateSentinel2Bands(lat, lon);
     }
 
