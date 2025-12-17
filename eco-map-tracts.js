@@ -7,6 +7,8 @@ let map;
 let tractLayers = [];
 let currentView = 'both'; // 'water', 'greenspace', 'both', 'eco'
 let visibleTracts = [];
+let actionFilterActive = false;
+let worstPredictedTracts = [];
 
 // Initialize minimalist map
 function initMap() {
@@ -109,13 +111,33 @@ function updateTractLayers() {
 
     if (visibleTracts.length === 0) return;
 
+    // Filter tracts if action filter is active
+    let tractsToDisplay = visibleTracts;
+    if (actionFilterActive && worstPredictedTracts.length > 0) {
+        const worstTractIds = new Set(worstPredictedTracts.map(t => t.properties.id || `${t.properties.lat}_${t.properties.lon}`));
+        tractsToDisplay = visibleTracts.filter(tract => {
+            const tractId = tract.properties.id || `${tract.properties.lat}_${tract.properties.lon}`;
+            return worstTractIds.has(tractId);
+        });
+    }
+
     // Create GeoJSON features
-    const features = visibleTracts.map(tract => {
+    const features = tractsToDisplay.map(tract => {
         const props = tract.properties;
         
         // Determine color based on view
         let fillColor;
-        if (currentView === 'water') {
+        if (actionFilterActive && props.prediction) {
+            // Highlight action-needed areas with red/orange
+            const risk = props.prediction.riskLevel;
+            if (risk === 'critical') {
+                fillColor = '#ff0000'; // Bright red
+            } else if (risk === 'high') {
+                fillColor = '#ff6600'; // Orange
+            } else {
+                fillColor = '#ff9900'; // Light orange
+            }
+        } else if (currentView === 'water') {
             fillColor = props.waterColor;
         } else if (currentView === 'greenspace') {
             fillColor = props.greenspaceColor;
@@ -180,17 +202,36 @@ function updateTractLayers() {
             currentPopup.remove();
         }
         
+        let popupHTML = `
+            <div style="min-width: 200px;">
+                <h3 style="margin-bottom: 10px; font-size: 16px;">Census Tract</h3>
+                <p style="margin: 5px 0;"><strong>EcoPercentile:</strong> ${props.ecoPercentile}th</p>
+                <p style="margin: 5px 0;"><strong>Water Quality:</strong> ${props.waterQuality.toFixed(0)}/100</p>
+                <p style="margin: 5px 0;"><strong>Greenspace:</strong> ${props.greenspace.toFixed(0)}%</p>
+                <p style="margin: 5px 0;"><strong>Eco Score:</strong> ${props.ecoScore.toFixed(0)}/100</p>
+        `;
+        
+        // Add prediction info if available
+        if (props.prediction) {
+            const pred = props.prediction;
+            const riskColor = pred.riskLevel === 'critical' ? '#ff0000' : 
+                            pred.riskLevel === 'high' ? '#ff6600' : '#ff9900';
+            popupHTML += `
+                <hr style="margin: 10px 0; border: none; border-top: 1px solid #444;">
+                <h4 style="margin: 10px 0 5px 0; font-size: 14px; color: ${riskColor};">
+                    🚨 ${pred.riskLevel.toUpperCase()} RISK
+                </h4>
+                <p style="margin: 5px 0; font-size: 12px;"><strong>Predicted Score (${pred.yearsAhead} years):</strong> ${pred.predictedScore}/100</p>
+                <p style="margin: 5px 0; font-size: 12px;"><strong>Annual Decline:</strong> ${pred.annualDecline.toFixed(2)} points/year</p>
+                <p style="margin: 5px 0; font-size: 12px;"><strong>Action Needed:</strong> ${pred.needsAction ? 'YES' : 'No'}</p>
+            `;
+        }
+        
+        popupHTML += `</div>`;
+        
         currentPopup = new maplibregl.Popup({ closeOnClick: false })
             .setLngLat(e.lngLat)
-            .setHTML(`
-                <div style="min-width: 200px;">
-                    <h3 style="margin-bottom: 10px; font-size: 16px;">Census Tract</h3>
-                    <p style="margin: 5px 0;"><strong>EcoPercentile:</strong> ${props.ecoPercentile}th</p>
-                    <p style="margin: 5px 0;"><strong>Water Quality:</strong> ${props.waterQuality.toFixed(0)}/100</p>
-                    <p style="margin: 5px 0;"><strong>Greenspace:</strong> ${props.greenspace.toFixed(0)}%</p>
-                    <p style="margin: 5px 0;"><strong>Eco Score:</strong> ${props.ecoScore.toFixed(0)}/100</p>
-                </div>
-            `)
+            .setHTML(popupHTML)
             .addTo(map);
     });
 
@@ -239,19 +280,57 @@ function blendColors(color1, color2, ratio) {
 // Toggle view mode
 function toggleView(mode) {
     currentView = mode;
+    actionFilterActive = false; // Turn off action filter when changing views
     
     // Update button states
-    const buttons = ['btn-water', 'btn-greenspace', 'btn-both', 'btn-eco'];
+    const buttons = ['btn-water', 'btn-greenspace', 'btn-both', 'btn-eco', 'btn-action'];
     buttons.forEach(btnId => {
         const btn = document.getElementById(btnId);
         if (btn) {
-            btn.classList.toggle('active', btnId === `btn-${mode}`);
+            btn.classList.toggle('active', btnId === `btn-${mode}` || (btnId === 'btn-action' && actionFilterActive));
         }
     });
     
     // Update map
     updateTractLayers();
     updateLegend();
+}
+
+// Toggle action filter (worst predicted areas)
+async function toggleActionFilter() {
+    actionFilterActive = !actionFilterActive;
+    
+    const btn = document.getElementById('btn-action');
+    if (btn) {
+        btn.classList.toggle('active', actionFilterActive);
+    }
+    
+    if (actionFilterActive) {
+        // Calculate predictions for visible tracts
+        const loading = document.getElementById('loading');
+        loading.style.display = 'block';
+        loading.querySelector('p').textContent = 'Analyzing future projections...';
+        
+        try {
+            worstPredictedTracts = await simpleAIPredictor.getWorstPredictedTracts(visibleTracts, 15);
+            loading.style.display = 'none';
+            
+            // Update legend for action filter
+            updateLegend();
+            updateTractLayers();
+            
+            // Show count
+            alert(`🚨 Found ${worstPredictedTracts.length} neighborhoods needing urgent action\n\nThese areas are predicted to have critical or high-risk declines in the next 15 years.`);
+        } catch (error) {
+            console.error('Error calculating predictions:', error);
+            loading.style.display = 'none';
+            alert('Error calculating predictions. Please try again.');
+        }
+    } else {
+        // Turn off filter
+        updateTractLayers();
+        updateLegend();
+    }
 }
 
 // Update legend
@@ -330,6 +409,23 @@ function updateLegend() {
                 <div class="legend-color" style="background: #cc0000;"></div>
                 <span>Very Poor (0-20th)</span>
             </div>
+        `;
+    } else if (actionFilterActive) {
+        legendTitle.textContent = '🚨 Action Needed (15-Year Projection)';
+        legendContent.innerHTML = `
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff0000;"></div>
+                <span>Critical Risk - Urgent Action</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff6600;"></div>
+                <span>High Risk - Action Required</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff9900;"></div>
+                <span>Moderate Risk - Monitor</span>
+            </div>
+            <p style="font-size: 11px; color: #888; margin-top: 10px;">Areas predicted to decline significantly in next 15 years</p>
         `;
     } else {
         legendTitle.textContent = 'Water & Greenspace';

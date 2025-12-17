@@ -274,6 +274,7 @@
         <button class="control-btn" onclick="toggleView('greenspace')" id="btn-greenspace">🌳 Greenspace</button>
         <button class="control-btn active" onclick="toggleView('both')" id="btn-both">🌊🌳 Both</button>
         <button class="control-btn" onclick="toggleView('eco')" id="btn-eco">📊 EcoPercentile</button>
+        <button class="control-btn" onclick="toggleActionFilter()" id="btn-action">🚨 Action Needed</button>
         <button class="control-btn" onclick="resetView()">🗺️ Reset</button>
     </div>
 
@@ -299,6 +300,7 @@
     <script src="satellite-api.js"></script>
     <script src="census-tracts.js"></script>
     <script src="eco-percentile.js"></script>
+    <script src="ai-predictions-simple.js"></script>
     <script>
         // Ensure ecoPercentileCalculator is available before loading map
         if (typeof ecoPercentileCalculator === 'undefined') {
