@@ -267,6 +267,15 @@ class EcoPercentileCalculator {
     }
 }
 
-// Global instance
-const ecoPercentileCalculator = new EcoPercentileCalculator();
+// Global instance - ensure it's available
+let ecoPercentileCalculator;
+try {
+    ecoPercentileCalculator = new EcoPercentileCalculator();
+    if (typeof window !== 'undefined') {
+        window.ecoPercentileCalculator = ecoPercentileCalculator;
+    }
+    console.log('EcoPercentileCalculator initialized');
+} catch (e) {
+    console.error('Error initializing EcoPercentileCalculator:', e);
+}
 
