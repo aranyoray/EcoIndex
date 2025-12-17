@@ -548,23 +548,26 @@ function showComparison() {
 
 // Initialize on page load
 window.addEventListener('load', () => {
-    // Wait for all scripts to load
-    setTimeout(() => {
-        if (typeof ecoPercentileCalculator === 'undefined') {
-            console.error('ecoPercentileCalculator not loaded - retrying...');
-            // Try to reload or use fallback
-            setTimeout(() => {
-                if (typeof ecoPercentileCalculator !== 'undefined') {
-                    initMap();
-                } else {
-                    console.error('Failed to load ecoPercentileCalculator');
-                    document.getElementById('loading').querySelector('p').textContent = 
-                        'Error loading calculator. Please refresh the page.';
+    // Wait for calculator with retry
+    function waitAndInit(maxWait = 3000) {
+        const startTime = Date.now();
+        const checkInterval = setInterval(() => {
+            if (typeof ecoPercentileCalculator !== 'undefined') {
+                clearInterval(checkInterval);
+                console.log('✓ All modules loaded, initializing map...');
+                initMap();
+            } else if (Date.now() - startTime > maxWait) {
+                clearInterval(checkInterval);
+                console.error('✗ Timeout waiting for ecoPercentileCalculator');
+                const loading = document.getElementById('loading');
+                if (loading) {
+                    loading.querySelector('p').textContent = 
+                        'Error: Calculator not loaded. Check browser console.';
                 }
-            }, 1000);
-        } else {
-            initMap();
-        }
-    }, 500);
+            }
+        }, 50);
+    }
+    
+    waitAndInit();
 });
 
