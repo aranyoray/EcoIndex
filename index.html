@@ -294,7 +294,7 @@
 
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <script src="ee-credentials.js"></script>
-    <script src="ee-credentials-local.js"></script>
+    <script src="ee-credentials-local.js" onerror="console.warn('ee-credentials-local.js not found - using estimation mode')"></script>
     <script src="ee-integration.js"></script>
     <script src="satellite-api.js"></script>
     <script src="census-tracts.js"></script>
@@ -302,7 +302,9 @@
     <script>
         // Ensure ecoPercentileCalculator is available before loading map
         if (typeof ecoPercentileCalculator === 'undefined') {
-            console.error('eco-percentile.js failed to load');
+            console.error('eco-percentile.js failed to load - check for syntax errors');
+        } else {
+            console.log('ecoPercentileCalculator loaded successfully');
         }
     </script>
     <script src="eco-map-tracts.js"></script>
