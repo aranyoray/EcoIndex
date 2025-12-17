@@ -88,6 +88,12 @@ async function loadTractsForView() {
         console.warn(`Limiting to ${maxTracts} tracts for performance (${tracts.length} total in viewport)`);
     }
     
+    // Get loading elements first
+    const loading = document.getElementById('loading');
+    const loadingText = document.getElementById('loading-text');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    
     // Process tracts with eco data (async for EE integration)
     if (typeof ecoPercentileCalculator === 'undefined') {
         console.error('ecoPercentileCalculator not loaded - retrying in 500ms');
@@ -104,9 +110,6 @@ async function loadTractsForView() {
         }, 500);
         return;
     }
-    
-    // Show loading with progress
-    const loading = document.getElementById('loading');
     const loadingText = document.getElementById('loading-text');
     const progressBar = document.getElementById('progress-bar');
     const progressText = document.getElementById('progress-text');
