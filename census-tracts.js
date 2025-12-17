@@ -57,12 +57,30 @@ class CensusTractData {
 
     /**
      * Generate tracts for entire US (simplified for performance)
+     * For testing, limit to Sonoma County, CA
      */
     generateUSTracts() {
         if (this.initialized && this.tracts.length > 0) {
             return this.tracts;
         }
 
+        // TESTING MODE: Sonoma County, CA only
+        // Sonoma County bounds: ~38.2°N to 38.8°N, ~122.5°W to 123.5°W
+        const testBounds = {
+            minLat: 38.2,
+            maxLat: 38.8,
+            minLon: -123.5,
+            maxLon: -122.5
+        };
+
+        // Use higher density for detailed testing
+        this.tracts = this.generateTractsForRegion(testBounds, 'high');
+        this.initialized = true;
+        
+        console.log(`Generated ${this.tracts.length} tracts for Sonoma County (testing mode)`);
+        return this.tracts;
+
+        /* PRODUCTION MODE: Uncomment for full US
         // US bounds (simplified)
         const usBounds = {
             minLat: 24.5,
@@ -76,6 +94,7 @@ class CensusTractData {
         this.initialized = true;
         
         return this.tracts;
+        */
     }
 
     /**

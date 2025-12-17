@@ -36,8 +36,8 @@ function initMap() {
                 maxzoom: 22
             }]
         },
-        center: [-98, 39], // Center of US
-        zoom: 4,
+        center: [-122.9, 38.5], // Sonoma County, CA (testing mode)
+        zoom: 10,
         attributionControl: true
     });
 
@@ -80,17 +80,43 @@ async function loadTractsForView() {
     // Get tracts in viewport
     const tracts = censusTractData.getTractsInBounds(mapBounds);
     
+    // Limit to reasonable number for performance (especially for testing)
+    const maxTracts = 500; // Limit to 500 tracts at a time
+    const limitedTracts = tracts.slice(0, maxTracts);
+    
+    if (tracts.length > maxTracts) {
+        console.warn(`Limiting to ${maxTracts} tracts for performance (${tracts.length} total in viewport)`);
+    }
+    
     // Process tracts with eco data (async for EE integration)
     if (typeof ecoPercentileCalculator === 'undefined') {
         console.error('ecoPercentileCalculator not loaded');
         return;
     }
-    const processedTracts = await ecoPercentileCalculator.processTractsAsync(tracts);
     
-    visibleTracts = processedTracts;
+    // Show loading
+    const loading = document.getElementById('loading');
+    if (loading) {
+        loading.style.display = 'block';
+        loading.querySelector('p').textContent = `Processing ${limitedTracts.length} neighborhoods...`;
+    }
     
-    // Update map layers
-    updateTractLayers();
+    try {
+        const processedTracts = await ecoPercentileCalculator.processTractsAsync(limitedTracts);
+        visibleTracts = processedTracts;
+        
+        // Update map layers
+        updateTractLayers();
+        
+        if (loading) {
+            loading.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error processing tracts:', error);
+        if (loading) {
+            loading.style.display = 'none';
+        }
+    }
 }
 
 // Update tract layers on map
@@ -463,9 +489,10 @@ function updateStatistics() {
 
 // Reset view
 function resetView() {
+    // Reset to Sonoma County (testing mode)
     map.flyTo({
-        center: [-98, 39],
-        zoom: 4,
+        center: [-122.9, 38.5], // Sonoma County, CA
+        zoom: 10,
         duration: 2000
     });
 }
