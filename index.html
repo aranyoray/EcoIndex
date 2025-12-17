@@ -272,11 +272,11 @@
     </div>
 
     <div class="controls">
-        <button class="control-btn active" onclick="toggleView('water')" id="btn-water">💧 Water Quality</button>
+        <button class="control-btn" onclick="toggleView('water')" id="btn-water">💧 Water</button>
         <button class="control-btn" onclick="toggleView('greenspace')" id="btn-greenspace">🌳 Greenspace</button>
-        <button class="control-btn" onclick="toggleView('both')" id="btn-both">🌊🌳 Both</button>
-        <button class="control-btn" onclick="showPredictions()">🤖 AI Predictions</button>
-        <button class="control-btn" onclick="resetView()">🗺️ Reset View</button>
+        <button class="control-btn active" onclick="toggleView('both')" id="btn-both">🌊🌳 Both</button>
+        <button class="control-btn" onclick="toggleView('eco')" id="btn-eco">📊 EcoPercentile</button>
+        <button class="control-btn" onclick="resetView()">🗺️ Reset</button>
     </div>
 
     <div id="map"></div>
@@ -287,12 +287,11 @@
     </div>
 
     <div class="info-panel">
-        <h3>📊 Location Statistics</h3>
-        <p><strong>Current Location:</strong> <span id="current-location">None selected</span></p>
-        <p><strong>Water Quality:</strong> <span class="stat-value" id="water-quality">--</span></p>
-        <p><strong>Greenspace %:</strong> <span class="stat-value" id="greenspace-pct">--</span>%</p>
-        <p><strong>Eco Score:</strong> <span class="stat-value" id="eco-score">--</span>/100</p>
-        <p style="margin-top: 15px; font-size: 12px; color: #888;">Click on water bodies or areas to see detailed analysis</p>
+        <h3>📊 EcoIndex Statistics</h3>
+        <p><strong>Visible Tracts:</strong> <span class="stat-value" id="tract-count">0</span></p>
+        <p><strong>Avg EcoPercentile:</strong> <span class="stat-value" id="avg-percentile">--</span>th</p>
+        <p><strong>View Mode:</strong> <span id="view-mode">Both</span></p>
+        <p style="margin-top: 15px; font-size: 12px; color: #888;">Hover over neighborhoods to see details</p>
     </div>
 
     <div class="comparison-panel" id="comparison-panel">
@@ -308,12 +307,9 @@
     </div>
 
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
-    <script src="water-quality.js"></script>
-    <script src="greenspace-analysis.js"></script>
-    <script src="location-service.js"></script>
-    <script src="earth-engine.js"></script>
-    <script src="ai-predictions.js"></script>
-    <script src="eco-map.js"></script>
+    <script src="census-tracts.js"></script>
+    <script src="eco-percentile.js"></script>
+    <script src="eco-map-tracts.js"></script>
 </body>
 </html>
 
