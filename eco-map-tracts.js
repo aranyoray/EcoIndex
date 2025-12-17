@@ -90,8 +90,18 @@ async function loadTractsForView() {
     
     // Process tracts with eco data (async for EE integration)
     if (typeof ecoPercentileCalculator === 'undefined') {
-        console.error('ecoPercentileCalculator not loaded');
-        return;
+        console.error('ecoPercentileCalculator not loaded - using fallback');
+        // Use fallback synchronous processing
+        if (typeof ecoPercentileCalculator !== 'undefined' && ecoPercentileCalculator.processTracts) {
+            visibleTracts = ecoPercentileCalculator.processTracts(limitedTracts);
+            updateTractLayers();
+            if (loading) loading.style.display = 'none';
+            return;
+        } else {
+            console.error('No fallback available');
+            if (loading) loading.style.display = 'none';
+            return;
+        }
     }
     
     // Show loading
@@ -497,8 +507,63 @@ function resetView() {
     });
 }
 
+// Missing functions for HTML buttons
+function useMyLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                map.flyTo({
+                    center: [position.coords.longitude, position.coords.latitude],
+                    zoom: 12,
+                    duration: 2000
+                });
+            },
+            (error) => {
+                alert('Could not get your location: ' + error.message);
+            }
+        );
+    } else {
+        alert('Geolocation is not supported by your browser');
+    }
+}
+
+function searchLocation() {
+    const zipInput = document.getElementById('zip-input');
+    const zipCode = zipInput.value.trim();
+    
+    if (!zipCode) {
+        alert('Please enter a ZIP code');
+        return;
+    }
+    
+    // Simple geocoding (in production, use real API)
+    alert('ZIP code search coming soon. For now, use "Use My Location" or pan the map.');
+    zipInput.value = '';
+}
+
+function showComparison() {
+    alert('Comparison feature coming soon. Use the "Action Needed" filter to see worst predicted areas.');
+}
+
 // Initialize on page load
 window.addEventListener('load', () => {
-    initMap();
+    // Wait for all scripts to load
+    setTimeout(() => {
+        if (typeof ecoPercentileCalculator === 'undefined') {
+            console.error('ecoPercentileCalculator not loaded - retrying...');
+            // Try to reload or use fallback
+            setTimeout(() => {
+                if (typeof ecoPercentileCalculator !== 'undefined') {
+                    initMap();
+                } else {
+                    console.error('Failed to load ecoPercentileCalculator');
+                    document.getElementById('loading').querySelector('p').textContent = 
+                        'Error loading calculator. Please refresh the page.';
+                }
+            }, 1000);
+        } else {
+            initMap();
+        }
+    }, 500);
 });
 

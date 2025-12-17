@@ -308,12 +308,28 @@
     <script src="eco-percentile.js"></script>
     <script src="ai-predictions-simple.js"></script>
     <script>
-        // Ensure ecoPercentileCalculator is available before loading map
-        if (typeof ecoPercentileCalculator === 'undefined') {
-            console.error('eco-percentile.js failed to load - check for syntax errors');
-        } else {
-            console.log('ecoPercentileCalculator loaded successfully');
+        // Wait for ecoPercentileCalculator to be defined
+        function waitForCalculator(callback, maxAttempts = 10) {
+            let attempts = 0;
+            const checkInterval = setInterval(() => {
+                attempts++;
+                if (typeof ecoPercentileCalculator !== 'undefined') {
+                    clearInterval(checkInterval);
+                    console.log('ecoPercentileCalculator loaded successfully');
+                    callback();
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(checkInterval);
+                    console.error('ecoPercentileCalculator failed to load after', maxAttempts, 'attempts');
+                    document.getElementById('loading').querySelector('p').textContent = 
+                        'Error: Calculator not loaded. Check console for details.';
+                }
+            }, 100);
         }
+        
+        // Start checking
+        waitForCalculator(() => {
+            // Calculator is ready, map will initialize on window.load
+        });
     </script>
     <script src="eco-map-tracts.js"></script>
 </body>
