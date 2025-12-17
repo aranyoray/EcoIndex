@@ -1,6 +1,7 @@
 /**
  * EcoPercentile Calculator
  * Calculates neighborhood-level eco scores and percentiles
+ * Version: 2.0 - Fixed syntax and loading issues
  */
 
 class EcoPercentileCalculator {
