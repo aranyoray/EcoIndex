@@ -37,7 +37,7 @@ class SpectralIndicesCalculator {
      */
     calculateNDWI(green, nir) {
         if (green + nir === 0) return 0;
-        const ndwi = (green - nIR) / (green + nir);
+        const ndwi = (green - nir) / (green + nir);
         return Math.max(-1, Math.min(1, ndwi));
     }
 
