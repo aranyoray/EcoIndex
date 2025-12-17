@@ -82,14 +82,14 @@ class EcoPercentileCalculator {
     }
 
     /**
-     * Process all tracts and calculate percentiles
+     * Process all tracts and calculate percentiles (async version)
      */
-    async processTracts(tracts) {
-        // Calculate scores for all tracts
-        const processedTracts = tracts.map(tract => {
-            // Get water quality and greenspace (simulated for now)
-            const waterQuality = this.estimateWaterQuality(tract.properties.lat, tract.properties.lon);
-            const greenspace = this.estimateGreenspace(tract.properties.lat, tract.properties.lon);
+    async processTractsAsync(tracts) {
+        // Calculate scores for all tracts (with async EE calls)
+        const processedTracts = await Promise.all(tracts.map(async tract => {
+            // Get water quality and greenspace (can use EE if available)
+            const waterQuality = await this.estimateWaterQuality(tract.properties.lat, tract.properties.lon);
+            const greenspace = await this.estimateGreenspace(tract.properties.lat, tract.properties.lon);
             
             const ecoScore = this.calculateEcoScore(waterQuality, greenspace);
             
@@ -118,8 +118,27 @@ class EcoPercentileCalculator {
 
     /**
      * Estimate water quality for a location
+     * Uses Google Earth Engine data if available
      */
-    estimateWaterQuality(lat, lon) {
+    async estimateWaterQuality(lat, lon) {
+        // Try to use EE service if available
+        if (typeof eeService !== 'undefined' && eeService.initialized) {
+            try {
+                const data = await eeService.getCountyData('County', 'State', lat, lon);
+                return data.waterQuality;
+            } catch (e) {
+                console.warn('EE service unavailable, using estimation:', e);
+            }
+        }
+        
+        // Fallback to estimation
+        return this.estimateWaterQualitySync(lat, lon);
+    }
+
+    /**
+     * Synchronous water quality estimation (fallback)
+     */
+    estimateWaterQualitySync(lat, lon) {
         // Base quality
         let quality = 60;
 
@@ -144,9 +163,60 @@ class EcoPercentileCalculator {
     }
 
     /**
-     * Estimate greenspace coverage
+     * Process all tracts and calculate percentiles (sync version for compatibility)
      */
-    estimateGreenspace(lat, lon) {
+    processTracts(tracts) {
+        // Synchronous version for backward compatibility
+        const processedTracts = tracts.map(tract => {
+            const waterQuality = this.estimateWaterQualitySync(tract.properties.lat, tract.properties.lon);
+            const greenspace = this.estimateGreenspaceSync(tract.properties.lat, tract.properties.lon);
+            
+            const ecoScore = this.calculateEcoScore(waterQuality, greenspace);
+            
+            tract.properties.waterQuality = waterQuality;
+            tract.properties.greenspace = greenspace;
+            tract.properties.ecoScore = ecoScore;
+            tract.properties.waterColor = this.getWaterColor(waterQuality);
+            tract.properties.greenspaceColor = this.getGreenspaceColor(greenspace);
+            
+            return ecoScore;
+        });
+
+        this.allScores = processedTracts;
+
+        tracts.forEach(tract => {
+            tract.properties.ecoPercentile = this.calculatePercentile(
+                tract.properties.ecoScore,
+                this.allScores
+            );
+        });
+
+        return tracts;
+    }
+
+    /**
+     * Estimate greenspace coverage
+     * Uses Google Earth Engine data if available
+     */
+    async estimateGreenspace(lat, lon) {
+        // Try to use EE service if available
+        if (typeof eeService !== 'undefined' && eeService.initialized) {
+            try {
+                const data = await eeService.getCountyData('County', 'State', lat, lon);
+                return data.greenspace;
+            } catch (e) {
+                console.warn('EE service unavailable, using estimation:', e);
+            }
+        }
+        
+        // Fallback to estimation
+        return this.estimateGreenspaceSync(lat, lon);
+    }
+
+    /**
+     * Synchronous greenspace estimation (fallback)
+     */
+    estimateGreenspaceSync(lat, lon) {
         let coverage = 40;
 
         // Urban areas have less

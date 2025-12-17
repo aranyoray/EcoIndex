@@ -36,4 +36,7 @@ build/
 *secret*
 *key*
 *credential*
+*credentials-local*
+# But allow the template
+!ee-credentials.js
 
