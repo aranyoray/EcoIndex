@@ -121,9 +121,20 @@ class EcoPercentileCalculator {
 
     /**
      * Estimate water quality for a location
-     * Uses Google Earth Engine data if available
+     * Uses spectral indices (NDWI) from Sentinel-2 if available
      */
     async estimateWaterQuality(lat, lon) {
+        // Try to use spectral indices calculator (real NDWI)
+        if (typeof spectralIndicesCalculator !== 'undefined') {
+            try {
+                const indices = await spectralIndicesCalculator.calculateAllIndices(lat, lon);
+                const quality = spectralIndicesCalculator.ndwiToWaterQuality(indices.ndwi);
+                return quality;
+            } catch (e) {
+                console.warn('Spectral indices unavailable, trying EE:', e);
+            }
+        }
+        
         // Try to use EE service if available
         if (typeof eeService !== 'undefined' && eeService.initialized) {
             try {
@@ -167,9 +178,20 @@ class EcoPercentileCalculator {
 
     /**
      * Estimate greenspace coverage
-     * Uses Google Earth Engine data if available
+     * Uses spectral indices (NDVI) from Sentinel-2 if available
      */
     async estimateGreenspace(lat, lon) {
+        // Try to use spectral indices calculator (real NDVI)
+        if (typeof spectralIndicesCalculator !== 'undefined') {
+            try {
+                const indices = await spectralIndicesCalculator.calculateAllIndices(lat, lon);
+                const coverage = spectralIndicesCalculator.ndviToGreenspace(indices.ndvi);
+                return coverage;
+            } catch (e) {
+                console.warn('Spectral indices unavailable, trying EE:', e);
+            }
+        }
+        
         // Try to use EE service if available
         if (typeof eeService !== 'undefined' && eeService.initialized) {
             try {
