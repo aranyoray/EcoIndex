@@ -90,18 +90,19 @@ async function loadTractsForView() {
     
     // Process tracts with eco data (async for EE integration)
     if (typeof ecoPercentileCalculator === 'undefined') {
-        console.error('ecoPercentileCalculator not loaded - using fallback');
-        // Use fallback synchronous processing
-        if (typeof ecoPercentileCalculator !== 'undefined' && ecoPercentileCalculator.processTracts) {
-            visibleTracts = ecoPercentileCalculator.processTracts(limitedTracts);
-            updateTractLayers();
-            if (loading) loading.style.display = 'none';
-            return;
-        } else {
-            console.error('No fallback available');
-            if (loading) loading.style.display = 'none';
-            return;
-        }
+        console.error('ecoPercentileCalculator not loaded - retrying in 500ms');
+        if (loading) loading.style.display = 'none';
+        
+        // Retry after a short delay
+        setTimeout(() => {
+            if (typeof ecoPercentileCalculator !== 'undefined') {
+                loadTractsForView();
+            } else {
+                console.error('ecoPercentileCalculator still not available');
+                alert('Error: Calculator module not loaded. Please refresh the page.');
+            }
+        }, 500);
+        return;
     }
     
     // Show loading
