@@ -100,7 +100,7 @@ class EcoPercentileCalculator {
             tract.properties.greenspaceColor = this.getGreenspaceColor(greenspace);
             
             return ecoScore;
-        });
+        }));
 
         // Store all scores for percentile calculation
         this.allScores = processedTracts;

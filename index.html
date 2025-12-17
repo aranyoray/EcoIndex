@@ -299,6 +299,12 @@
     <script src="satellite-api.js"></script>
     <script src="census-tracts.js"></script>
     <script src="eco-percentile.js"></script>
+    <script>
+        // Ensure ecoPercentileCalculator is available before loading map
+        if (typeof ecoPercentileCalculator === 'undefined') {
+            console.error('eco-percentile.js failed to load');
+        }
+    </script>
     <script src="eco-map-tracts.js"></script>
 </body>
 </html>

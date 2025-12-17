@@ -79,6 +79,10 @@ async function loadTractsForView() {
     const tracts = censusTractData.getTractsInBounds(mapBounds);
     
     // Process tracts with eco data (async for EE integration)
+    if (typeof ecoPercentileCalculator === 'undefined') {
+        console.error('ecoPercentileCalculator not loaded');
+        return;
+    }
     const processedTracts = await ecoPercentileCalculator.processTractsAsync(tracts);
     
     visibleTracts = processedTracts;
