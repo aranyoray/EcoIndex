@@ -21,7 +21,12 @@ class EarthEngineService {
         // In production, initialize Google Earth Engine JavaScript API
         // For now, we'll simulate the API calls
         
-        this.apiKey = apiKey || process.env.GOOGLE_EARTH_ENGINE_API_KEY;
+        // Check for API key in environment (browser-compatible)
+        if (!apiKey && typeof window !== 'undefined' && window.GOOGLE_EARTH_ENGINE_API_KEY) {
+            apiKey = window.GOOGLE_EARTH_ENGINE_API_KEY;
+        }
+        
+        this.apiKey = apiKey || null;
         this.initialized = true;
         
         console.log('Earth Engine service initialized (simulated)');
@@ -185,6 +190,14 @@ class EarthEngineService {
 // Global instance
 const earthEngineService = new EarthEngineService();
 
-// Initialize on load
-earthEngineService.initialize();
+// Initialize on load (with error handling)
+window.addEventListener('load', () => {
+    // Initialize in background (non-blocking)
+    setTimeout(() => {
+        earthEngineService.initialize().catch(err => {
+            console.warn('Earth Engine initialization warning:', err);
+            // Continue with simulated data
+        });
+    }, 1000);
+});
 

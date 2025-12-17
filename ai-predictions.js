@@ -61,14 +61,14 @@ class AIPredictor {
         // Compile models
         this.models.waterQuality.compile({
             optimizer: 'adam',
-            loss: 'meanSquaredError',
-            metrics: ['meanAbsoluteError']
+            loss: 'meanSquaredError'
+            // Removed metrics to avoid compatibility issues
         });
 
         this.models.greenspace.compile({
             optimizer: 'adam',
-            loss: 'meanSquaredError',
-            metrics: ['meanAbsoluteError']
+            loss: 'meanSquaredError'
+            // Removed metrics to avoid compatibility issues
         });
     }
 
