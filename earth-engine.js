@@ -1,26 +1,37 @@
 /**
  * Google Earth Engine Integration Module
- * Handles satellite imagery retrieval and processing
+ * NOTE: Google Earth Engine is FREE for research/non-commercial use
+ * but requires approval. For production, we recommend using free alternatives:
+ * - Sentinel-2 AWS Public Dataset (completely free, no API key)
+ * - Landsat AWS Public Dataset (completely free)
+ * See satellite-api.js for free alternatives
  */
 
 class EarthEngineService {
     constructor() {
         this.apiKey = null;
         this.initialized = false;
+        this.useFreeAlternatives = true; // Use free satellite APIs instead
     }
 
     /**
      * Initialize Google Earth Engine API
-     * Note: In production, you'll need to set up Google Earth Engine API credentials
+     * Note: GEE is free but requires approval for API access
+     * We recommend using free alternatives in satellite-api.js instead
      */
     async initialize(apiKey = null) {
         if (this.initialized) {
             return true;
         }
 
-        // In production, initialize Google Earth Engine JavaScript API
-        // For now, we'll simulate the API calls
-        
+        // Use free alternatives by default
+        if (this.useFreeAlternatives) {
+            console.log('Using free satellite data sources (Sentinel-2/Landsat) instead of Google Earth Engine');
+            this.initialized = true;
+            return true;
+        }
+
+        // Only use GEE if explicitly configured
         // Check for API key in environment (browser-compatible)
         if (!apiKey && typeof window !== 'undefined' && window.GOOGLE_EARTH_ENGINE_API_KEY) {
             apiKey = window.GOOGLE_EARTH_ENGINE_API_KEY;
@@ -29,15 +40,19 @@ class EarthEngineService {
         this.apiKey = apiKey || null;
         this.initialized = true;
         
-        console.log('Earth Engine service initialized (simulated)');
+        console.log('Earth Engine service initialized (requires GEE approval)');
         return true;
     }
 
     /**
      * Get satellite imagery for water quality analysis
-     * Uses Sentinel-2 or Landsat imagery
+     * Uses free Sentinel-2 or Landsat imagery via satellite-api.js
      */
     async getWaterQualityImagery(lat, lon, date = null, radiusKm = 5) {
+        // Use free satellite API instead of GEE
+        if (this.useFreeAlternatives && typeof satelliteAPI !== 'undefined') {
+            return await satelliteAPI.getSentinel2Data(lat, lon, date, radiusKm);
+        }
         // In production, this would call Google Earth Engine API:
         /*
         const image = ee.ImageCollection('COPERNICUS/S2_SR')
@@ -71,8 +86,18 @@ class EarthEngineService {
 
     /**
      * Get NDVI (greenspace) imagery
+     * Uses free Sentinel-2 or Landsat imagery
      */
     async getGreenspaceImagery(lat, lon, date = null, radiusKm = 5) {
+        // Use free satellite API instead of GEE
+        if (this.useFreeAlternatives && typeof satelliteAPI !== 'undefined') {
+            const data = await satelliteAPI.getSentinel2Data(lat, lon, date, radiusKm);
+            return {
+                ndvi: data.ndvi,
+                rgb: data.rgb,
+                date: data.date
+            };
+        }
         // In production:
         /*
         const image = ee.ImageCollection('LANDSAT/LC08/C01/T1_SR')
