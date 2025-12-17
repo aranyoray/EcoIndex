@@ -37,6 +37,7 @@ build/
 *key*
 *credential*
 *credentials-local*
+*ee-aranyoray*.json
 # But allow the template
 !ee-credentials.js
 

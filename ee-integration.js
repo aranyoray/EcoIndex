@@ -18,7 +18,12 @@ class EEService {
      * Load credentials from local file
      */
     loadCredentials() {
-        // Try to get from local credentials file
+        // Try to get from window.EE_CREDENTIALS (loaded from JSON)
+        if (typeof window !== 'undefined' && window.EE_CREDENTIALS) {
+            this.credentials = window.EE_CREDENTIALS;
+            return true;
+        }
+        // Try legacy ee-credentials-local.js format
         if (typeof EE_CREDENTIALS !== 'undefined' && EE_CREDENTIALS) {
             this.credentials = EE_CREDENTIALS;
             return true;
