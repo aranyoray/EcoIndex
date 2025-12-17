@@ -213,6 +213,7 @@
             z-index: 1000;
             text-align: center;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            min-width: 300px;
         }
 
         .loading-spinner {
@@ -223,6 +224,29 @@
             height: 40px;
             animation: spin 1s linear infinite;
             margin: 0 auto 15px;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 10px;
         }
 
         @keyframes spin {
@@ -255,7 +279,11 @@
 <body>
     <div class="loading" id="loading">
         <div class="loading-spinner"></div>
-        <p>Loading EcoDestination...</p>
+        <p id="loading-text">Loading EcoDestination...</p>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        <div class="progress-text" id="progress-text">0%</div>
     </div>
 
     <div class="header">
@@ -296,19 +324,19 @@
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <script src="ee-credentials.js"></script>
     <script>
-        // Try to load credentials from JSON file
+        // Try to load credentials from JSON file (silently fail if not found)
         async function loadEECredentials() {
             try {
                 const response = await fetch('ee-aranyoray-f02dcae4760d.json');
                 if (response.ok) {
                     const credentials = await response.json();
                     window.EE_CREDENTIALS = credentials;
-                    console.log('Google Earth Engine credentials loaded from JSON file');
+                    console.log('✓ Google Earth Engine credentials loaded');
                 } else {
-                    console.warn('Credentials file not found - using estimation mode');
+                    // Silently use estimation mode - this is expected if file not deployed
                 }
             } catch (error) {
-                console.warn('Could not load credentials file - using estimation mode:', error);
+                // Silently use estimation mode
             }
         }
         loadEECredentials();

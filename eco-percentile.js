@@ -1,7 +1,7 @@
 /**
  * EcoPercentile Calculator
  * Calculates neighborhood-level eco scores and percentiles
- * Version: 2.0 - Fixed syntax and loading issues
+ * Version: 2.1 - Fixed syntax issues
  */
 
 class EcoPercentileCalculator {
@@ -166,6 +166,75 @@ class EcoPercentileCalculator {
     }
 
     /**
+     * Estimate greenspace coverage
+     * Uses Google Earth Engine data if available
+     */
+    async estimateGreenspace(lat, lon) {
+        // Try to use EE service if available
+        if (typeof eeService !== 'undefined' && eeService.initialized) {
+            try {
+                const data = await eeService.getCountyData('County', 'State', lat, lon);
+                return data.greenspace;
+            } catch (e) {
+                console.warn('EE service unavailable, using estimation:', e);
+            }
+        }
+        
+        // Fallback to estimation
+        return this.estimateGreenspaceSync(lat, lon);
+    }
+
+    /**
+     * Synchronous greenspace estimation (fallback)
+     */
+    estimateGreenspaceSync(lat, lon) {
+        let coverage = 40;
+
+        // Pacific Northwest - high greenspace
+        if (lat > 45 && lat < 50 && lon > -125 && lon < -100) {
+            coverage = 70 + (Math.random() - 0.5) * 20;
+        }
+        // Desert Southwest - low
+        else if (lat > 32 && lat < 40 && lon > -120 && lon < -110) {
+            coverage = 15 + (Math.random() - 0.5) * 10;
+        }
+        // Southeast - moderate-high
+        else if (lat > 30 && lat < 36 && lon > -90 && lon < -75) {
+            coverage = 50 + (Math.random() - 0.5) * 20;
+        }
+
+        // Urban impact
+        if (this.isUrbanArea(lat, lon)) {
+            coverage -= 20;
+        }
+
+        return Math.max(0, Math.min(100, coverage));
+    }
+
+    /**
+     * Check if urban area
+     */
+    isUrbanArea(lat, lon) {
+        return (
+            (lat > 40 && lat < 42 && lon > -74 && lon < -73) || // NYC
+            (lat > 34 && lat < 35 && lon > -119 && lon < -118) || // LA
+            (lat > 41 && lat < 42 && lon > -88 && lon < -87) || // Chicago
+            (lat > 29 && lat < 30 && lon > -96 && lon < -95) // Houston
+        );
+    }
+
+    /**
+     * Check if coastal area
+     */
+    isCoastalArea(lat, lon) {
+        return (
+            Math.abs(lon + 80) < 5 || // East Coast
+            Math.abs(lon + 122) < 5 || // West Coast
+            (lat > 25 && lat < 31 && lon > -85 && lon < -80) // Gulf Coast
+        );
+    }
+
+    /**
      * Process all tracts and calculate percentiles (sync version for compatibility)
      */
     processTracts(tracts) {
@@ -195,76 +264,6 @@ class EcoPercentileCalculator {
         });
 
         return tracts;
-    }
-
-    /**
-     * Estimate greenspace coverage
-     * Uses Google Earth Engine data if available
-     */
-    async estimateGreenspace(lat, lon) {
-        // Try to use EE service if available
-        if (typeof eeService !== 'undefined' && eeService.initialized) {
-            try {
-                const data = await eeService.getCountyData('County', 'State', lat, lon);
-                return data.greenspace;
-            } catch (e) {
-                console.warn('EE service unavailable, using estimation:', e);
-            }
-        }
-        
-        // Fallback to estimation
-        return this.estimateGreenspaceSync(lat, lon);
-    }
-
-    /**
-     * Synchronous greenspace estimation (fallback)
-     */
-    estimateGreenspaceSync(lat, lon) {
-        let coverage = 40;
-
-        // Urban areas have less
-        const isUrban = this.isUrbanArea(lat, lon);
-        if (isUrban) coverage -= 20;
-
-        // Regional variations
-        if (lat > 45 && lat < 50 && lon > -125 && lon < -100) {
-            // Pacific Northwest - more green
-            coverage += 30;
-        } else if (lat > 30 && lat < 36 && lon > -90 && lon < -75) {
-            // Southeast - moderate
-            coverage += 10;
-        } else if (lat > 32 && lat < 40 && lon > -120 && lon < -110) {
-            // Desert Southwest - less
-            coverage -= 15;
-        }
-
-        // Add variation
-        coverage += (Math.random() - 0.5) * 15;
-
-        return Math.max(0, Math.min(100, coverage));
-    }
-
-    /**
-     * Check if urban area
-     */
-    isUrbanArea(lat, lon) {
-        return (
-            (lat > 40 && lat < 42 && lon > -74 && lon < -73) || // NYC
-            (lat > 34 && lat < 35 && lon > -119 && lon < -118) || // LA
-            (lat > 41 && lat < 42 && lon > -88 && lon < -87) || // Chicago
-            (lat > 29 && lat < 30 && lon > -96 && lon < -95) // Houston
-        );
-    }
-
-    /**
-     * Check if coastal area
-     */
-    isCoastalArea(lat, lon) {
-        return (
-            Math.abs(lon + 80) < 5 || // East Coast
-            Math.abs(lon + 122) < 5 || // West Coast
-            (lat > 25 && lat < 31 && lon > -85 && lon < -80) // Gulf Coast
-        );
     }
 }
 

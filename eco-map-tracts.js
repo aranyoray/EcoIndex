@@ -105,15 +105,29 @@ async function loadTractsForView() {
         return;
     }
     
-    // Show loading
+    // Show loading with progress
     const loading = document.getElementById('loading');
+    const loadingText = document.getElementById('loading-text');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    
     if (loading) {
         loading.style.display = 'block';
-        loading.querySelector('p').textContent = `Processing ${limitedTracts.length} neighborhoods...`;
+        if (loadingText) loadingText.textContent = `Processing ${limitedTracts.length} neighborhoods...`;
+        if (progressBar) progressBar.style.width = '0%';
+        if (progressText) progressText.textContent = '0%';
     }
     
     try {
-        const processedTracts = await ecoPercentileCalculator.processTractsAsync(limitedTracts);
+        // Process with progress updates
+        const processedTracts = await processTractsWithProgress(limitedTracts, (progress) => {
+            if (progressBar) progressBar.style.width = progress + '%';
+            if (progressText) progressText.textContent = Math.round(progress) + '%';
+            if (loadingText) {
+                loadingText.textContent = `Processing satellite data... ${Math.round(progress)}%`;
+            }
+        });
+        
         visibleTracts = processedTracts;
         
         // Update map layers
@@ -128,6 +142,63 @@ async function loadTractsForView() {
             loading.style.display = 'none';
         }
     }
+}
+
+// Process tracts with progress updates
+async function processTractsWithProgress(tracts, progressCallback) {
+    if (typeof ecoPercentileCalculator === 'undefined') {
+        throw new Error('ecoPercentileCalculator not available');
+    }
+    
+    const total = tracts.length;
+    const batchSize = 10; // Process in batches for progress updates
+    const results = [];
+    
+    for (let i = 0; i < tracts.length; i += batchSize) {
+        const batch = tracts.slice(i, i + batchSize);
+        const batchResults = await Promise.all(
+            batch.map(async (tract) => {
+                const waterQuality = await ecoPercentileCalculator.estimateWaterQuality(
+                    tract.properties.lat, 
+                    tract.properties.lon
+                );
+                const greenspace = await ecoPercentileCalculator.estimateGreenspace(
+                    tract.properties.lat, 
+                    tract.properties.lon
+                );
+                
+                const ecoScore = ecoPercentileCalculator.calculateEcoScore(waterQuality, greenspace);
+                
+                tract.properties.waterQuality = waterQuality;
+                tract.properties.greenspace = greenspace;
+                tract.properties.ecoScore = ecoScore;
+                tract.properties.waterColor = ecoPercentileCalculator.getWaterColor(waterQuality);
+                tract.properties.greenspaceColor = ecoPercentileCalculator.getGreenspaceColor(greenspace);
+                
+                return ecoScore;
+            })
+        );
+        
+        results.push(...batchResults);
+        
+        // Update progress
+        const progress = ((i + batch.length) / total) * 100;
+        if (progressCallback) progressCallback(progress);
+        
+        // Small delay to show progress
+        await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    
+    // Calculate percentiles
+    ecoPercentileCalculator.allScores = results;
+    tracts.forEach(tract => {
+        tract.properties.ecoPercentile = ecoPercentileCalculator.calculatePercentile(
+            tract.properties.ecoScore,
+            ecoPercentileCalculator.allScores
+        );
+    });
+    
+    return tracts;
 }
 
 // Update tract layers on map
