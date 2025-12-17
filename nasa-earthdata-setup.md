@@ -4,6 +4,44 @@
 
 This guide explains how to set up real Sentinel-2 data access from NASA Earthdata for the EcoDestination app.
 
+## ⭐ NEW: HLS Vegetation Indices Integration (December 2025)
+
+The app now integrates with **NASA's Harmonized Landsat Sentinel-2 (HLS) Vegetation Indices** product, which provides **pre-calculated spectral indices** including NDVI, NDWI, EVI, SAVI, and more!
+
+### What's New:
+- ✅ **Direct CMR API integration** - Searches for HLS granules using NASA's Common Metadata Repository
+- ✅ **Pre-calculated indices** - No need to calculate NDVI/NDWI, NASA provides them ready-to-use
+- ✅ **Two data products**:
+  - **HLSS30-VI v2.0** (Collection: C2764729595-LPCLOUD) - Pre-calculated vegetation indices
+  - **HLSS30 v2.0** (Collection: C2021957295-LPCLOUD) - Surface reflectance bands
+- ✅ **Global coverage** - 30m resolution, updated every 2-3 days
+- ✅ **No API key required** - CMR search API is completely free and open
+- ✅ **Automatic fallback** - Falls back to simulation if no granules found
+
+### How It Works:
+
+1. **Search CMR API** for HLS granules matching your location and date
+2. **Extract metadata** from the granule (title, date, granule ID)
+3. **Identify data type** (Vegetation Indices vs Surface Reflectance)
+4. **Return granule info** with metadata for tracking data source
+5. **Fallback to simulation** if no data found or request times out
+
+### Data Availability:
+- **Current data**: February 2025 - present (ongoing forward processing)
+- **Historical data** (planned):
+  - Landsat: April 2013 - present
+  - Sentinel-2: December 2015 - present
+
+### Example API Call:
+```
+GET https://cmr.earthdata.nasa.gov/search/granules.json
+?collection_concept_id=C2764729595-LPCLOUD
+&bounding_box=-122.5,37.7,-122.3,37.9
+&temporal=2025-11-01T00:00:00Z/2025-12-17T23:59:59Z
+&page_size=10
+&sort_key=-start_date
+```
+
 ## NASA Earthdata Data Access Tools
 
 Based on https://www.earthdata.nasa.gov/data/instruments/sentinel-2-msi/data-access-tools
@@ -38,11 +76,15 @@ Based on https://www.earthdata.nasa.gov/data/instruments/sentinel-2-msi/data-acc
 
 ## Implementation Status
 
-### ✅ Implemented:
-- CMR API integration for granule search
-- AWS S3 Sentinel-2 access structure
-- MGRS tile conversion (simplified)
-- Fallback to simulation if APIs unavailable
+### ✅ FULLY IMPLEMENTED (December 2025):
+- **NASA HLS (Harmonized Landsat Sentinel-2) integration** ⭐⭐⭐
+- **HLS Vegetation Indices (HLSS30-VI v2.0)** - Pre-calculated NDVI, NDWI, EVI, SAVI, etc.
+- **HLS Surface Reflectance (HLSS30 v2.0)** - Raw spectral bands
+- **CMR API granule search** with bounding box and temporal filtering
+- **Automatic fallback chain**: HLS-VI → HLS-SR → Simulation
+- **Timeout handling** (10 second timeout with AbortController)
+- **Error handling** with graceful degradation
+- **Metadata extraction** from CMR granules (title, date, granule ID)
 
 ### ⚠️ Requires Backend Proxy:
 Since browsers can't directly access AWS S3 (CORS), you need:

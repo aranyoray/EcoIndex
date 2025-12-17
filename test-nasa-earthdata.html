@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NASA Earthdata Integration Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #ecf0f1;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            border-left: 4px solid #27ae60;
+            background: #d5f4e6;
+        }
+        .error {
+            border-left: 4px solid #e74c3c;
+            background: #fadbd8;
+        }
+        .info {
+            border-left: 4px solid #f39c12;
+            background: #fef5e7;
+        }
+        .loading {
+            color: #3498db;
+            font-weight: bold;
+        }
+        input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px;
+            width: 150px;
+        }
+        .coordinates {
+            margin: 15px 0;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 2px;
+        }
+        .badge-success { background: #27ae60; color: white; }
+        .badge-info { background: #3498db; color: white; }
+        .badge-warning { background: #f39c12; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛰️ NASA Earthdata Integration Test</h1>
+
+        <div class="test-section">
+            <h2>Test Configuration</h2>
+            <div class="coordinates">
+                <label>Latitude: <input type="number" id="lat" value="37.7749" step="0.0001"></label>
+                <label>Longitude: <input type="number" id="lon" value="-122.4194" step="0.0001"></label>
+                <label>Date: <input type="date" id="date" value=""></label>
+            </div>
+            <p><small>Default: San Francisco, CA</small></p>
+        </div>
+
+        <div class="test-section">
+            <h2>Tests</h2>
+            <button onclick="testCMRSearch()">1. Test CMR API Search</button>
+            <button onclick="testHLSVI()">2. Test HLS-VI Integration</button>
+            <button onclick="testHLSSR()">3. Test HLS-SR Integration</button>
+            <button onclick="testFullIntegration()">4. Test Full Integration</button>
+            <button onclick="testSpectralIndices()">5. Calculate Spectral Indices</button>
+            <button onclick="runAllTests()">🚀 Run All Tests</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script src="spectral-indices.js"></script>
+    <script>
+        // Set today's date as default
+        document.getElementById('date').valueAsDate = new Date();
+
+        function getCoordinates() {
+            return {
+                lat: parseFloat(document.getElementById('lat').value),
+                lon: parseFloat(document.getElementById('lon').value),
+                date: document.getElementById('date').value || null
+            };
+        }
+
+        function addResult(title, content, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = `<strong>${title}</strong>\n${content}`;
+            resultsDiv.appendChild(resultDiv);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testCMRSearch() {
+            clearResults();
+            addResult('🔍 Test 1: CMR API Search', 'Starting CMR API granule search...', 'info');
+
+            const { lat, lon, date } = getCoordinates();
+
+            try {
+                const signal = new AbortController().signal;
+
+                // Test HLS-VI collection
+                addResult('Testing HLS-VI Collection', `Searching for C2764729595-LPCLOUD at (${lat}, ${lon})...`, 'info');
+                const granules = await spectralIndicesCalculator.searchCMRGranules(
+                    'C2764729595-LPCLOUD',
+                    lat,
+                    lon,
+                    date,
+                    signal
+                );
+
+                if (granules && granules.length > 0) {
+                    const result = `✅ Found ${granules.length} granules!\n\n` +
+                        `First granule:\n` +
+                        `  Title: ${granules[0].title}\n` +
+                        `  Date: ${granules[0].time_start}\n` +
+                        `  ID: ${granules[0].id}\n` +
+                        `  Producer: ${granules[0].data_center || 'N/A'}`;
+                    addResult('✅ CMR Search Successful', result, 'success');
+                } else {
+                    addResult('⚠️ No Granules Found', 'No HLS-VI granules found for this location/date. This is normal if the area has no recent coverage.', 'info');
+                }
+            } catch (error) {
+                addResult('❌ CMR Search Failed', `Error: ${error.message}\n${error.stack}`, 'error');
+            }
+        }
+
+        async function testHLSVI() {
+            clearResults();
+            addResult('🌿 Test 2: HLS-VI Integration', 'Testing HLS Vegetation Indices product...', 'info');
+
+            const { lat, lon, date } = getCoordinates();
+
+            try {
+                const bands = await spectralIndicesCalculator.fetchFromNASAEarthdata(lat, lon, date);
+
+                if (bands && bands.source === 'nasa-earthdata-aws') {
+                    const result = `✅ Successfully fetched data!\n\n` +
+                        `Source: ${bands.dataSource}\n` +
+                        `Granule: ${bands.granuleTitle || 'N/A'}\n` +
+                        `Date: ${bands.date}\n` +
+                        `ID: ${bands.granuleId || 'N/A'}\n\n` +
+                        `Bands:\n` +
+                        `  B2 (Blue):  ${bands.B2}\n` +
+                        `  B3 (Green): ${bands.B3}\n` +
+                        `  B4 (Red):   ${bands.B4}\n` +
+                        `  B8 (NIR):   ${bands.B8}\n` +
+                        `  B11 (SWIR): ${bands.B11}`;
+                    addResult('✅ HLS-VI Integration Works!', result, 'success');
+                } else {
+                    addResult('⚠️ Fallback Used', 'No NASA data found, using simulation', 'info');
+                }
+            } catch (error) {
+                addResult('❌ HLS-VI Test Failed', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testHLSSR() {
+            clearResults();
+            addResult('📡 Test 3: HLS-SR Integration', 'Testing HLS Surface Reflectance product...', 'info');
+
+            const { lat, lon, date } = getCoordinates();
+
+            try {
+                const signal = new AbortController().signal;
+                const granules = await spectralIndicesCalculator.searchCMRGranules(
+                    'C2021957295-LPCLOUD',
+                    lat,
+                    lon,
+                    date,
+                    signal
+                );
+
+                if (granules && granules.length > 0) {
+                    const result = `✅ Found ${granules.length} HLS-SR granules!\n\n` +
+                        `First granule:\n` +
+                        `  Title: ${granules[0].title}\n` +
+                        `  Date: ${granules[0].time_start}\n` +
+                        `  Coverage: Global 30m`;
+                    addResult('✅ HLS-SR Data Available', result, 'success');
+                } else {
+                    addResult('⚠️ No HLS-SR Granules', 'No surface reflectance data found', 'info');
+                }
+            } catch (error) {
+                addResult('❌ HLS-SR Test Failed', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testFullIntegration() {
+            clearResults();
+            addResult('🎯 Test 4: Full Integration', 'Testing complete fetchSentinel2Bands flow...', 'info');
+
+            const { lat, lon, date } = getCoordinates();
+
+            try {
+                const bands = await spectralIndicesCalculator.fetchSentinel2Bands(lat, lon, date);
+
+                const result = `✅ Data retrieved!\n\n` +
+                    `Source: ${bands.source}\n` +
+                    `Data Source: ${bands.dataSource || 'simulated'}\n` +
+                    `Date: ${bands.date}\n\n` +
+                    `Band Values:\n` +
+                    `  B2 (Blue):  ${bands.B2.toFixed(2)}\n` +
+                    `  B3 (Green): ${bands.B3.toFixed(2)}\n` +
+                    `  B4 (Red):   ${bands.B4.toFixed(2)}\n` +
+                    `  B8 (NIR):   ${bands.B8.toFixed(2)}\n` +
+                    `  B11 (SWIR): ${bands.B11.toFixed(2)}\n\n` +
+                    (bands.granuleTitle ? `Granule: ${bands.granuleTitle}` : 'Using simulated data');
+
+                const type = bands.source === 'nasa-earthdata-aws' ? 'success' : 'info';
+                addResult('✅ Full Integration Complete', result, type);
+            } catch (error) {
+                addResult('❌ Integration Test Failed', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSpectralIndices() {
+            clearResults();
+            addResult('📊 Test 5: Spectral Indices', 'Calculating all spectral indices...', 'info');
+
+            const { lat, lon, date } = getCoordinates();
+
+            try {
+                const indices = await spectralIndicesCalculator.calculateAllIndices(lat, lon, date);
+
+                const result = `✅ Indices calculated!\n\n` +
+                    `NDVI:  ${indices.ndvi.toFixed(4)} ${getNDVIInterpretation(indices.ndvi)}\n` +
+                    `NDWI:  ${indices.ndwi.toFixed(4)} ${getNDWIInterpretation(indices.ndwi)}\n` +
+                    `MNDWI: ${indices.mndwi.toFixed(4)}\n` +
+                    `EVI:   ${indices.evi.toFixed(4)}\n` +
+                    `SAVI:  ${indices.savi.toFixed(4)}\n\n` +
+                    `Interpretations:\n` +
+                    `  Greenspace: ${spectralIndicesCalculator.ndviToGreenspace(indices.ndvi).toFixed(1)}%\n` +
+                    `  Water Quality: ${spectralIndicesCalculator.ndwiToWaterQuality(indices.ndwi).toFixed(1)}/100\n\n` +
+                    `Data Source: ${indices.bands.source}\n` +
+                    `Date: ${indices.date}`;
+
+                addResult('✅ Spectral Indices Complete', result, 'success');
+            } catch (error) {
+                addResult('❌ Spectral Indices Failed', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        function getNDVIInterpretation(ndvi) {
+            if (ndvi < 0) return '(Water/Bare soil)';
+            if (ndvi < 0.2) return '(Bare soil/Urban)';
+            if (ndvi < 0.3) return '(Sparse vegetation)';
+            if (ndvi < 0.6) return '(Moderate vegetation)';
+            return '(Dense vegetation)';
+        }
+
+        function getNDWIInterpretation(ndwi) {
+            if (ndwi < -0.3) return '(No water)';
+            if (ndwi < 0) return '(Low moisture)';
+            if (ndwi < 0.3) return '(Moderate moisture)';
+            return '(High water content)';
+        }
+
+        async function runAllTests() {
+            clearResults();
+            addResult('🚀 Running All Tests', 'Executing complete test suite...', 'info');
+
+            await testCMRSearch();
+            await new Promise(r => setTimeout(r, 1000));
+
+            await testHLSVI();
+            await new Promise(r => setTimeout(r, 1000));
+
+            await testHLSSR();
+            await new Promise(r => setTimeout(r, 1000));
+
+            await testFullIntegration();
+            await new Promise(r => setTimeout(r, 1000));
+
+            await testSpectralIndices();
+
+            addResult('✅ All Tests Complete', 'Test suite finished!', 'success');
+        }
+
+        // Auto-run a basic test on load
+        window.addEventListener('load', () => {
+            console.log('NASA Earthdata Integration Test Page Loaded');
+            console.log('SpectralIndicesCalculator:', spectralIndicesCalculator);
+        });
+    </script>
+</body>
+</html>
